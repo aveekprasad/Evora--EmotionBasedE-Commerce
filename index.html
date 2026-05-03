@@ -28,6 +28,26 @@
         <!-- SEARCH BAR -->
         <input type="text" id="search" placeholder="Search products..." />
 
+        <!-- ADD PRODUCTS -->
+        <button id="toggleFormBtn">➕ Add Product</button>
+        <div id="addProductForm" style="display:none;">
+            <h2>Add Product</h2>
+
+            <input id="pName" placeholder="Product Name">
+            <input id="pPrice" placeholder="Price (₹499)">
+            <input id="pImage" placeholder="Image URL">
+            <input id="pRating" placeholder="Rating (4.5⭐)">
+            
+            <select id="pEmotion">
+                <option value="happy">Happy</option>
+                <option value="sad">Sad</option>
+                <option value="angry">Angry</option>
+                <option value="relaxed">Relaxed</option>
+            </select>
+
+            <button id="addProductBtn">Add Product</button>
+        </div>
+
         <!-- EMOTION BUTTONS -->
         <div id="emotions">
             <button>😊 Happy</button>

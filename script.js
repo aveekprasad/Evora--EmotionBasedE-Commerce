@@ -12,7 +12,6 @@ const searchInput = document.getElementById("search");
 ========================= */
 buttons.forEach((button, index) => {
     button.addEventListener("click", () => {
-
         const emotions = ["happy", "sad", "angry", "relaxed"];
         currentEmotion = emotions[index];
 
@@ -41,26 +40,35 @@ document.getElementById("homeBtn").onclick = () => {
 });
 
 /* =========================
-   FETCH + DISPLAY PRODUCTS
+   FETCH PRODUCTS
 ========================= */
 async function displayProducts(emotion) {
     try {
-        console.log("Fetching:", emotion);
+        productDiv.innerHTML = "<p>Loading...</p>";
 
-        const response = await fetch(`http://127.0.0.1:5000/products?emotion=${emotion}`);
+        const res = await fetch(`http://127.0.0.1:5000/products?emotion=${emotion}`);
 
-        if (!response.ok) {
-            throw new Error("Server error");
-        }
+        if (!res.ok) throw new Error("Server error");
 
-        const data = await response.json();
+        const data = await res.json();
 
-        cachedProducts = data;
+        // ✅ Remove duplicates (important)
+        const unique = [];
+        const seen = new Set();
 
-        renderProducts(data);
+        data.forEach(item => {
+            const key = item.name + item.image;
+            if (!seen.has(key)) {
+                seen.add(key);
+                unique.push(item);
+            }
+        });
 
-    } catch (error) {
-        console.error("ERROR:", error);
+        cachedProducts = unique;
+        renderProducts(unique);
+
+    } catch (err) {
+        console.error(err);
         productDiv.innerHTML = "<p>⚠️ Failed to load products</p>";
     }
 }
@@ -69,7 +77,6 @@ async function displayProducts(emotion) {
    RENDER PRODUCTS
 ========================= */
 function renderProducts(items, searchTerm = "") {
-
     productDiv.innerHTML = `<h2>${currentEmotion.toUpperCase()} Products</h2>`;
 
     const container = document.createElement("div");
@@ -106,53 +113,91 @@ searchInput.addEventListener("input", () => {
 });
 
 /* =========================
-   THEME FUNCTION
+   THEME
 ========================= */
 function setTheme(emotion) {
     const root = document.documentElement;
     const body = document.body;
 
-    if (emotion === "happy") {
-        root.style.setProperty("--accent-color", "#f59f00");
-        root.style.setProperty("--card-bg", "rgba(255, 243, 191, 0.9)");
-        root.style.setProperty("--text-color", "#5c3d00");
-        body.style.backgroundImage = "url('images/happy-bg.png')";
-    }
+    const themes = {
+        happy: ["#f59f00", "rgba(255,243,191,0.9)", "#5c3d00", "images/happy-bg.png"],
+        sad: ["#1c7ed6", "rgba(219,228,255,0.9)", "#1c3d5a", "images/sad-bg.png"],
+        angry: ["#e03131", "rgba(255,201,201,0.9)", "#5a1c1c", "images/angry-bg.png"],
+        relaxed: ["#099268", "rgba(195,250,232,0.9)", "#1b4332", "images/relaxed-bg.png"]
+    };
 
-    if (emotion === "sad") {
-        root.style.setProperty("--accent-color", "#1c7ed6");
-        root.style.setProperty("--card-bg", "rgba(219, 228, 255, 0.9)");
-        root.style.setProperty("--text-color", "#1c3d5a");
-        body.style.backgroundImage = "url('images/sad-bg.png')";
-    }
+    const [accent, card, text, bg] = themes[emotion];
 
-    if (emotion === "angry") {
-        root.style.setProperty("--accent-color", "#e03131");
-        root.style.setProperty("--card-bg", "rgba(255, 201, 201, 0.9)");
-        root.style.setProperty("--text-color", "#5a1c1c");
-        body.style.backgroundImage = "url('images/angry-bg.png')";
-    }
-
-    if (emotion === "relaxed") {
-        root.style.setProperty("--accent-color", "#099268");
-        root.style.setProperty("--card-bg", "rgba(195, 250, 232, 0.9)");
-        root.style.setProperty("--text-color", "#1b4332");
-        body.style.backgroundImage = "url('images/relaxed-bg.png')";
-    }
+    root.style.setProperty("--accent-color", accent);
+    root.style.setProperty("--card-bg", card);
+    root.style.setProperty("--text-color", text);
+    body.style.backgroundImage = `url('${bg}')`;
 }
 
-/* =========================
-   RESET THEME
-========================= */
 function resetTheme() {
     const root = document.documentElement;
     const body = document.body;
 
     root.style.setProperty("--accent-color", "#000");
     root.style.setProperty("--card-bg", "rgba(255,255,255,0.15)");
-    root.style.setProperty("--text-color", "#ffffff");
+    root.style.setProperty("--text-color", "#fff");
 
     body.style.backgroundImage = "url('images/homepage-bg.png')";
 }
+
+/* =========================
+   TOGGLE FORM
+========================= */
+document.getElementById("toggleFormBtn").onclick = () => {
+    const form = document.getElementById("addProductForm");
+    form.style.display = form.style.display === "none" ? "block" : "none";
+};
+
+/* =========================
+   ADD PRODUCT
+========================= */
+const addBtn = document.getElementById("addProductBtn");
+
+addBtn.addEventListener("click", async () => {
+
+    const product = {
+        name: document.getElementById("pName").value.trim(),
+        price: document.getElementById("pPrice").value.trim(),
+        image: document.getElementById("pImage").value.trim(),
+        rating: document.getElementById("pRating").value.trim(),
+        emotion: document.getElementById("pEmotion").value
+    };
+
+    if (!product.name || !product.price || !product.image) {
+        alert("Fill all fields ❌");
+        return;
+    }
+
+    addBtn.disabled = true;
+
+    try {
+        const res = await fetch("http://127.0.0.1:5000/add-product", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(product)
+        });
+
+        const data = await res.json();
+        alert(data.message);
+
+        // reset
+        document.getElementById("addProductForm").reset?.();
+
+        if (currentEmotion === product.emotion) {
+            displayProducts(product.emotion);
+        }
+
+    } catch (err) {
+        console.error(err);
+        alert("Failed ❌");
+    }
+
+    addBtn.disabled = false;
+});
 
 });
